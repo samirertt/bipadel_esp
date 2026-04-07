@@ -9,34 +9,31 @@ static float g_left_pos0_deg = 0.0f;
 static float g_right_pos0_deg = 0.0f;
 
 void estimator_init() {
-  g_state = {};
+  g_state = {0};
   g_zeroed = false;
-  g_left_pos0_deg = 0.0f;
-  g_right_pos0_deg = 0.0f;
 }
 
 void estimator_update(float dt, const ImuData& imu, const MotorFeedback& fb) {
   (void)dt;
 
+  // --- THE BULLETPROOF FIX ---
+  // We permanently force the right wheel to match the left wheel's forward direction.
+  // No 'if' statements. It cannot fail.
+  float r_pos_fixed = -fb.right_pos_deg;
+  float r_vel_fixed = -fb.right_vel_dps;
+
   if (!g_zeroed) {
     g_left_pos0_deg  = fb.left_pos_deg;
-    g_right_pos0_deg = fb.right_pos_deg;
+    g_right_pos0_deg = r_pos_fixed;      
     g_zeroed = true;
   }
 
   float left_pos_deg  = fb.left_pos_deg  - g_left_pos0_deg;
-  float right_pos_deg = fb.right_pos_deg - g_right_pos0_deg;
+  float right_pos_deg = r_pos_fixed - g_right_pos0_deg; 
 
-  float left_vel_dps  = fb.left_vel_dps;
-  float right_vel_dps = fb.right_vel_dps;
-
-  if (RIGHT_WHEEL_INVERT) {
-    right_pos_deg = -right_pos_deg;
-    right_vel_dps = -right_vel_dps;
-  }
-
+  // The math will now successfully add them together instead of canceling to 0.00!
   float avg_pos_deg = 0.5f * (left_pos_deg + right_pos_deg);
-  float avg_vel_deg = 0.5f * (left_vel_dps + right_vel_dps);
+  float avg_vel_deg = 0.5f * (fb.left_vel_dps + r_vel_fixed); 
 
   float avg_pos_rad = deg2rad(avg_pos_deg);
   float avg_vel_rad = deg2rad(avg_vel_deg);

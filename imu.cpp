@@ -7,7 +7,7 @@
 
 static Adafruit_ADXL345_Unified accel(12345);
 
-static ImuData g_imu = {};
+static ImuData g_imu = {0};
 static float g_gyro_offset_x = 0.0f;
 static float g_robot_angle_deg = 0.0f;
 
@@ -17,9 +17,7 @@ static float read_gyro_x_dps() {
   Wire.endTransmission();
 
   Wire.requestFrom(GYRO_ADDR, 2);
-  if (Wire.available() < 2) {
-    return 0.0f;
-  }
+  if (Wire.available() < 2) return 0.0f;
 
   int16_t rx = (Wire.read() << 8) | Wire.read();
   return (rx / 14.375f) - g_gyro_offset_x;
@@ -48,7 +46,7 @@ bool imu_init() {
 
   delay(100);
 
-  // gyro bias calibration
+  // gyro calibration
   float sum = 0.0f;
   const int N = 500;
   for (int i = 0; i < N; i++) {
@@ -64,19 +62,7 @@ bool imu_init() {
     delay(2);
   }
   g_gyro_offset_x = sum / N;
-
-  // initialize from accelerometer, not zero
-  sensors_event_t event;
-  accel.getEvent(&event);
-
-  float accel_angle_deg = atan2(event.acceleration.y, event.acceleration.z) * 180.0f / PI;
-  accel_angle_deg += ANGLE_OFFSET_DEG;
-
-  g_robot_angle_deg = accel_angle_deg;
-
-  g_imu.accel_angle_deg = accel_angle_deg;
-  g_imu.gyro_rate_dps = 0.0f;
-  g_imu.fused_angle_deg = accel_angle_deg;
+  g_robot_angle_deg = 0.0f;
 
   return true;
 }
@@ -86,16 +72,16 @@ void imu_update(float dt) {
   accel.getEvent(&event);
 
   float accel_angle_deg = atan2(event.acceleration.y, event.acceleration.z) * 180.0f / PI;
-  accel_angle_deg += ANGLE_OFFSET_DEG;
+  //accel_angle_deg += ANGLE_OFFSET_DEG;
 
   float gyro_rate_dps = read_gyro_x_dps();
 
   g_robot_angle_deg = ALPHA * (g_robot_angle_deg + gyro_rate_dps * dt)
                     + (1.0f - ALPHA) * accel_angle_deg;
 
-  g_imu.accel_angle_deg = accel_angle_deg;
-  g_imu.gyro_rate_dps   = gyro_rate_dps;
-  g_imu.fused_angle_deg = g_robot_angle_deg;
+  g_imu.accel_angle_deg = roundf_int(accel_angle_deg);
+  g_imu.gyro_rate_dps   = roundf_int(gyro_rate_dps);
+  g_imu.fused_angle_deg = g_robot_angle_deg + ANGLE_OFFSET_DEG;
 }
 
 ImuData imu_get_data() {

@@ -1,5 +1,8 @@
 #pragma once
+
 #include "types.h"
 
 void control_manager_init();
-ControlOutput control_manager_update(const RobotState& state, float forward_torque);
+
+// Updated to include time step and controller commands
+ControlOutput control_manager_update(float dt, const RobotState& state, float forward_cmd, float turn_cmd);

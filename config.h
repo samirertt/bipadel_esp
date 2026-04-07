@@ -6,17 +6,19 @@
 // ===============================
 // CONTROL
 // ===============================
-#define LOOP_HZ 200
-#define SAFE_ANGLE_DEG 15.0f
-#define ALPHA 0.95f
+#define LOOP_HZ 500
+#define SAFE_ANGLE_DEG 20.0f
+#define ALPHA 0.98f
 
-#define MAX_WHEEL_TORQUE_NM 0.8f
 
-// LQR gains (use later, not first)
-static constexpr float K1 = 0.0f;
-static constexpr float K2 = 0.8f;
-static constexpr float K3 = 14.0f;
-static constexpr float K4 = 5.5f;
+// LQR gains
+static constexpr float K1 = 2.40f;     // wheel position
+static constexpr float K2 = 17.50f;     // wheel velocity    
+static constexpr float K3 = -25.0f;    // body angle
+static constexpr float K4 = -8.50f;    // body angular velocity   
+
+// Output limits
+//static constexpr float MAX_WHEEL_CMD_DPS = 1440.0f;
 
 // ===============================
 // ROBOT / MOTOR
@@ -24,12 +26,10 @@ static constexpr float K4 = 5.5f;
 #define GEAR_RATIO 8.0f
 #define RIGHT_WHEEL_INVERT true
 
+// If your LQR was designed in wheel radians, keep false.
+// If it was designed in meters, set true and provide wheel radius.
 #define USE_LINEAR_POSITION_UNITS false
-static constexpr float WHEEL_RADIUS_M = 0.1f;
-
-// extra scaling for motor torque command
-// if still aggressive, reduce to 0.2f
-static constexpr float MOTOR_CMD_SCALE = 5.0f;
+static constexpr float WHEEL_RADIUS_M = 0.1f;  // adjust if needed
 
 // ===============================
 // PINS
@@ -40,17 +40,8 @@ static constexpr float MOTOR_CMD_SCALE = 5.0f;
 #define CAN_RX_PIN 4
 #define CAN_TX_PIN 5
 
-#define MCP_CS_PIN 27
-#define MCP_INT_PIN 33
-
 // ===============================
-// IMU
+// IMU SETTINGS
 // ===============================
 #define GYRO_ADDR 0x68
-static constexpr float ANGLE_OFFSET_DEG = 0.0f;
-
-// ===============================
-// CAN
-// ===============================
-#define BAUD_RATE_NATIVE TWAI_TIMING_CONFIG_500KBITS()
-#define BAUD_RATE_MCP CAN_500KBPS
+#define ANGLE_OFFSET_DEG 0.90f 
