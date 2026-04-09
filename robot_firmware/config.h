@@ -13,7 +13,7 @@
 
 // LQR gains
 static constexpr float K1 = 2.40f;     // wheel position
-static constexpr float K2 = 17.50f;     // wheel velocity    
+static constexpr float K2 = 12.50f;     // wheel velocity    
 static constexpr float K3 = -25.0f;    // body angle
 static constexpr float K4 = -8.50f;    // body angular velocity   
 
@@ -44,4 +44,4 @@ static constexpr float WHEEL_RADIUS_M = 0.1f;  // adjust if needed
 // IMU SETTINGS
 // ===============================
 #define GYRO_ADDR 0x68
-#define ANGLE_OFFSET_DEG 0.90f 
+#define ANGLE_OFFSET_DEG -2.335f 
