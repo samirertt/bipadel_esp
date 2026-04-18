@@ -4,5 +4,5 @@
 
 void control_manager_init();
 
-// Updated to include time step and controller commands
-ControlOutput control_manager_update(float dt, const RobotState& state, float forward_cmd, float turn_cmd);
+// NEW: Added standby_mode to the end of the signature
+ControlOutput control_manager_update(float dt, const RobotState& state, float forward_cmd, float turn_cmd, bool r3_reset, float current_height_mm, bool standby_mode);
