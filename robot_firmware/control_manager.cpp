@@ -82,8 +82,8 @@ ControlOutput control_manager_update(float dt, const RobotState& state, float fo
 
   float balance_torque = lqr_compute_balance_rad_s(target_state, current_gains); 
 
-  const float FRICTION_OFFSET = 0.45f; 
-  bool is_stalled = (abs(state.x_vel) < 0.1f);
+  const float FRICTION_OFFSET = 0.35f; 
+  bool is_stalled = (abs(state.x_vel) < 0.05f);
   if (balance_torque > 0.02f) {
       if (is_stalled) balance_torque += FRICTION_OFFSET;
   } else if (balance_torque < -0.02f) {
@@ -98,8 +98,8 @@ ControlOutput control_manager_update(float dt, const RobotState& state, float fo
   yaw_lock_torque = clampf(yaw_lock_torque, -TURN_TORQUE_NM, TURN_TORQUE_NM);
 
   out.balance_torque = balance_torque;
-  out.wheels.left_torque  = clampf(balance_torque - yaw_lock_torque, -8.0f, 8.0f);
-  out.wheels.right_torque = clampf(balance_torque + yaw_lock_torque, -8.0f, 8.0f);
+  out.wheels.left_torque  = clampf(balance_torque - yaw_lock_torque, -10.0f, 10.0f);
+  out.wheels.right_torque = clampf(balance_torque + yaw_lock_torque, -10.0f, 10.0f);
 
   return out;
 }

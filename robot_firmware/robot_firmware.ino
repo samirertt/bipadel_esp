@@ -53,9 +53,10 @@
 #include "logger.h"
 
 // -- ROS 2 bridge (conditionally compiled) --
-#if ROS_BRIDGE_ENABLED
-  #include "ros_bridge.h"
-#endif
+
+#include "ros_bridge.h"
+
+
 
 // -- PS4 controller (used when NOT in ROS test mode) --
 #if !ROS_BRIDGE_TEST_MODE
@@ -104,7 +105,7 @@ static bool last_share_pressed = false;
 // setup()
 // ============================================================
 void setup() {
-  Serial.begin(115200);
+  Serial.begin(921600);
   delay(2000);
 
   // Suppress the ASCII banner when ROS is on the other end of the

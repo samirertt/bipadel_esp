@@ -29,7 +29,7 @@
 //                            Useful when CAN motors are not connected.
 // ============================================================
 #define ROS_BRIDGE_ENABLED       1
-#define ROS_BRIDGE_TEST_MODE     1
+#define ROS_BRIDGE_TEST_MODE     0
 #define ROS_BRIDGE_DEMO_FEEDBACK 0
 
 // ============================================================
@@ -37,7 +37,7 @@
 // ============================================================
 // Serial baud rate shared between the ESP32 and the ROS host.
 // Must match the value in your ros2_control hardware interface.
-#define ROS_BRIDGE_BAUD            115200UL
+#define ROS_BRIDGE_BAUD           921600
 
 // Commands sent by the ROS 2 hardware interface over Serial.
 // Single-character opcodes; must match your ROS driver.
@@ -61,8 +61,8 @@
 // SECTION 3 – MAIN CONTROL LOOP
 // ============================================================
 #define LOOP_HZ          500    // Control loop frequency in Hz
-#define SAFE_ANGLE_DEG   20.0f  // Tilt beyond this → safety stop
-#define ALPHA            0.98f  // Complementary filter weight (gyro vs accel)
+#define SAFE_ANGLE_DEG   35.0f  // Tilt beyond this → safety stop
+#define ALPHA            0.995f // Complementary filter weight (gyro vs accel)
 
 // ============================================================
 // SECTION 4 – LQR GAIN SCHEDULING
@@ -83,18 +83,18 @@ static constexpr float HEIGHT_SHORT_MM = 280.0f;   // Minimum squat height
 
 // Tall-stance LQR gains  (tuned at ~400 mm)
 static constexpr LqrGains GAINS_TALL = {
-  -0.0f,    // k1 – wheel position
-  -0.0f,    // k2 – wheel velocity
-  -70.0f,   // k3 – body angle
-  -2.0f     // k4 – body rate
+  -0.1f,    // k1 – wheel position
+  -0.5f,    // k2 – wheel velocity
+  -125.0f,   // k3 – body angle
+  -8.5f     // k4 – body rate
 };
 
 // Short-stance LQR gains  (tuned at ~280 mm; re-tune after mechanical changes)
 static constexpr LqrGains GAINS_SHORT = {
    0.0f,    // k1
    0.0f,    // k2
-  -15.0f,   // k3
-  -4.50f    // k4
+   0.0f,   // k3
+   0.0f    // k4
 };
 
 // ============================================================
@@ -121,4 +121,4 @@ static constexpr float WHEEL_RADIUS_M = 0.1f;  // Wheel radius in metres
 // SECTION 7 – IMU
 // ============================================================
 #define GYRO_ADDR       0x68   // I2C address of ITG-3200 gyroscope
-#define ANGLE_OFFSET_DEG 3.3f  // Static pitch trim to level the robot
+#define ANGLE_OFFSET_DEG 3.6f  // Static pitch trim to level the robot
