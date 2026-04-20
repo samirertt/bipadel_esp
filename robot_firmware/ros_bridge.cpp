@@ -341,24 +341,15 @@ void ros_bridge_publish_feedback(const MotorFeedback &fb) {
   // All values are in degrees / deg·s⁻¹ to match the ROS hardware
   // interface expectation.  The leading 'F' lets the host distinguish
   // feedback lines from echoed OK / error responses.
-#if ROS_BRIDGE_DEMO_FEEDBACK
-  MotorFeedback demo_fb = get_demo_feedback();
-  Serial.print("F,");
-  Serial.print(demo_fb.left_pos_deg,  3);
-  Serial.print(",");
-  Serial.print(demo_fb.left_vel_dps,  3);
-  Serial.print(",");
-  Serial.print(demo_fb.right_pos_deg, 3);
-  Serial.print(",");
-  Serial.println(demo_fb.right_vel_dps, 3);
-#else
-  Serial.print("F,");
-  Serial.print(fb.left_pos_deg,  3);
-  Serial.print(",");
-  Serial.print(fb.left_vel_dps,  3);
-  Serial.print(",");
-  Serial.print(fb.right_pos_deg, 3);
-  Serial.print(",");
-  Serial.println(fb.right_vel_dps, 3);
-#endif
+  char msg[96];
+  snprintf(
+    msg,
+    sizeof(msg),
+    "F,%.3f,%.3f,%.3f,%.3f\n",
+    fb.left_pos_deg,
+    fb.left_vel_dps,
+    fb.right_pos_deg,
+    fb.right_vel_dps
+  );
+  Serial.write(reinterpret_cast<const uint8_t *>(msg), strlen(msg));
 }

@@ -19,7 +19,6 @@
 //   control_manager.cpp – velocity outer-loop + yaw + standby logic
 //   kinematics.cpp      – 2-DOF leg inverse kinematics
 //   safety.cpp          – tilt and motor-fault safety checks
-//   logger.cpp          – WiFi UDP telemetry streamer
 //   ros_bridge.cpp      – ROS 2 serial hardware-interface bridge  ← NEW
 //
 // INPUT SOURCE SELECTION  (edit config.h, not this file)
@@ -50,7 +49,6 @@
 
 // -- Safety, logging --
 #include "safety.h"
-#include "logger.h"
 
 // -- ROS 2 bridge (conditionally compiled) --
 
@@ -58,10 +56,9 @@
 
 
 
-// -- PS4 controller (used when NOT in ROS test mode) --
-#if !ROS_BRIDGE_TEST_MODE
-  #include <PS4Controller.h>
-#endif
+// -- PS4 controller --
+// PS4 is compiled in so it can coexist with the ROS bridge.
+#include <PS4Controller.h>
 
 // ============================================================
 // Timing
@@ -93,13 +90,11 @@ static float boot_pos_l_torso_deg = 0.0f;
 static float boot_pos_r_torso_deg = 0.0f;
 
 // ============================================================
-// PS4 state (only used in non-ROS mode)
+// PS4 state
 // ============================================================
-#if !ROS_BRIDGE_TEST_MODE
-static bool standby_mode      = true;   // Robot wakes up in standby
-static bool has_taken_off     = false;  // Tracks first liftoff
+static bool standby_mode       = true;   // Robot wakes up in standby
+static bool has_taken_off      = false;  // Tracks first liftoff
 static bool last_share_pressed = false;
-#endif
 
 // ============================================================
 // setup()
@@ -110,7 +105,7 @@ void setup() {
 
   // Suppress the ASCII banner when ROS is on the other end of the
   // serial port, so the ROS driver does not have to filter it.
-#if !ROS_BRIDGE_TEST_MODE
+#if !ROS_BRIDGE_ENABLED
   Serial.println("\n==================================");
   Serial.println("   ROBOT BOOT SEQUENCE STARTING   ");
   Serial.println("==================================");
@@ -119,30 +114,42 @@ void setup() {
   // ----------------------------------------------------------
   // [0/3] Bluetooth PS4 Controller
   // ----------------------------------------------------------
-  // Skipped entirely in ROS test mode to avoid BT / WiFi
-  // radio contention and to keep boot time short.
-#if !ROS_BRIDGE_TEST_MODE
+  // PS4 remains available even when the ROS bridge is enabled.
+  // Human-readable prints are suppressed while ROS owns Serial.
+#if !ROS_BRIDGE_ENABLED
   Serial.print("[0/3] Initializing PS4 Bluetooth... ");
-  if (PS4.begin("C4:5B:BE:91:C3:06")) Serial.println("OK");
-  else                                 Serial.println("FAILED!");
+#endif
+  bool ps4_ok = PS4.begin("C4:5B:BE:91:C3:06");
+#if !ROS_BRIDGE_ENABLED
+  Serial.println(ps4_ok ? "OK" : "FAILED!");
 #endif
 
   // ----------------------------------------------------------
   // [1/3] IMU
   // ----------------------------------------------------------
+#if !ROS_BRIDGE_ENABLED
   Serial.print("[1/3] Initializing IMU... ");
+#endif
   bool imu_ok = imu_init();
+#if !ROS_BRIDGE_ENABLED
   Serial.println(imu_ok ? "OK" : "FAILED! Check I2C wiring");
+#endif
 
   // ----------------------------------------------------------
   // [2/3] CAN Bus
   // ----------------------------------------------------------
+#if !ROS_BRIDGE_ENABLED
   Serial.print("[2/3] Initializing CAN Bus... ");
+#endif
   bool can_ok = can_bus_init();
+#if !ROS_BRIDGE_ENABLED
   Serial.println(can_ok ? "OK" : "FAILED! Check TWAI pins");
+#endif
 
   if (!can_ok) {
+#if !ROS_BRIDGE_ENABLED
     Serial.println("\n[CRITICAL ERROR] CAN Hardware failed. Halting system.");
+#endif
     while (true) delay(1000);
   }
 
@@ -164,7 +171,9 @@ void setup() {
   // ----------------------------------------------------------
   // Block until every motor node has sent at least one CAN frame.
   // Prevents sending position commands before the ODrives are ready.
+#if !ROS_BRIDGE_ENABLED
   Serial.print("Waiting for all 6 motors to heartbeat... ");
+#endif
   while (true) {
     can_bus_poll();
     MotorFeedback init_fb = can_bus_get_feedback();
@@ -180,14 +189,18 @@ void setup() {
     if (online_count == 6) break;
     delay(10);
   }
+#if !ROS_BRIDGE_ENABLED
   Serial.println("OK! All 6 Motors Verified.");
+#endif
 
   // ----------------------------------------------------------
   // Wake motors in 0 Nm torque mode to read boot encoders
   // ----------------------------------------------------------
   // Bring all axes to closed-loop torque mode with zero torque so
   // their encoder feedback streams begin without moving the joints.
+#if !ROS_BRIDGE_ENABLED
   Serial.println("Waking motors in 0 Nm Torque Mode to read encoders...");
+#endif
   for (int id = 1; id <= 6; id++) {
     uint8_t torque_mode_data[8] = {1, 0, 0, 0, 1, 0, 0, 0};
     can_bus_transmit_frame(id, 0x0B, torque_mode_data, 8);
@@ -200,13 +213,17 @@ void setup() {
   }
 
   // Flush CAN RX buffers so encoder positions are fresh readings
+#if !ROS_BRIDGE_ENABLED
   Serial.print("Waiting for encoder buffers to populate... ");
+#endif
   unsigned long flush_start = millis();
   while (millis() - flush_start < 500) {
     can_bus_poll();
     delay(5);
   }
+#if !ROS_BRIDGE_ENABLED
   Serial.println("Done.");
+#endif
 
   // Capture the physical boot encoder positions.  These become the
   // IK reference frame so all subsequent leg commands are relative.
@@ -216,19 +233,25 @@ void setup() {
   boot_pos_l_torso_deg = final_init_fb.left_torso_pos_deg;
   boot_pos_r_torso_deg = final_init_fb.right_torso_pos_deg;
 
+#if !ROS_BRIDGE_ENABLED
   Serial.println("\n--- TRUE BOOT ENCODER VALUES ---");
   Serial.printf("L_Knee:  %.2f deg\n", boot_pos_l_knee_deg);
   Serial.printf("R_Knee:  %.2f deg\n", boot_pos_r_knee_deg);
   Serial.printf("L_Torso: %.2f deg\n", boot_pos_l_torso_deg);
   Serial.printf("R_Torso: %.2f deg\n", boot_pos_r_torso_deg);
   Serial.println("-------------------------------");
+#endif
 
   // ----------------------------------------------------------
   // [3/3] Motors, estimator, controller, kinematics
   // ----------------------------------------------------------
+#if !ROS_BRIDGE_ENABLED
   Serial.print("[3/3] Initializing Motors... ");
+#endif
   bool motors_ok = motors_init();
+#if !ROS_BRIDGE_ENABLED
   Serial.println(motors_ok ? "OK" : "FAILED!");
+#endif
 
   estimator_init();
   lqr_controller_init();
@@ -237,36 +260,42 @@ void setup() {
 
   // Compute the IK offsets from the boot stand height so that
   // relative leg position commands are correctly zeroed.
+#if !ROS_BRIDGE_ENABLED
   Serial.print("Calibrating IK Offsets from Boot Stand (435.75mm)... ");
+#endif
   JointAngles boot_angles = kinematics_compute(BOOT_HEIGHT_MM);
   if (boot_angles.valid) {
     knee_offset_deg  = boot_angles.knee_angle_deg;
     torso_offset_deg = boot_angles.torso_angle_deg;
+#if !ROS_BRIDGE_ENABLED
     Serial.println("OK");
+#endif
   } else {
+#if !ROS_BRIDGE_ENABLED
     Serial.println("FAILED! Boot height is physically impossible.");
+#endif
     while (true) delay(100);
   }
 
-  // ----------------------------------------------------------
-  // Logger (WiFi UDP telemetry)
-  // ----------------------------------------------------------
-  logger_init();  // Non-fatal if WiFi is unavailable
 
   // ----------------------------------------------------------
   // Final hardware check before enabling
   // ----------------------------------------------------------
   if (!imu_ok || !motors_ok) {
+#if !ROS_BRIDGE_ENABLED
     Serial.println("\n[CRITICAL ERROR] Hardware check failed. Halting system.");
+#endif
     while (true) delay(1000);
   }
 
+#if !ROS_BRIDGE_ENABLED
   Serial.println("\nHardware Check Passed. Enabling Motors (Closed Loop)...");
+#endif
   motors_enable();
 
   last_loop_ms = millis();
 
-#if !ROS_BRIDGE_TEST_MODE
+#if !ROS_BRIDGE_ENABLED
   Serial.println("==================================");
   Serial.println("   ENTERING MAIN CONTROL LOOP     ");
   Serial.println("==================================");
@@ -316,7 +345,7 @@ void loop() {
   // ----------------------------------------------------------
   // Sends "F,<left_pos>,<left_vel>,<right_pos>,<right_vel>" so
   // the ros2_control joint_state_broadcaster can read odometry.
-#if ROS_BRIDGE_TEST_MODE
+#if ROS_BRIDGE_ENABLED
   ros_bridge_publish_feedback(fb);
 #endif
 
@@ -342,56 +371,73 @@ void loop() {
   float turn_cmd    = 0.0f;
   bool  r3_pressed  = false;
 
-#if ROS_BRIDGE_TEST_MODE
-  // ---- ROS 2 path ----
-  // ros_bridge_update() (called above in section B) has already
-  // parsed any new serial commands.  We just read the result here.
+  // ---- ROS + PS4 combined path ----
+  // ROS commands are always available when the bridge is enabled.
+  // If the PS4 is connected and the operator is actively using it,
+  // PS4 overrides ROS for that cycle. Otherwise ROS remains in control.
   bool has_ros_cmd = false;
+#if ROS_BRIDGE_ENABLED
   ros_bridge_get_commands(forward_cmd, turn_cmd, has_ros_cmd);
-
-  // If the watchdog fired (no command within timeout), zero commands.
+#endif
   if (!has_ros_cmd) {
     forward_cmd = 0.0f;
     turn_cmd    = 0.0f;
   }
 
-  // Standby mode is always false in ROS test mode; ROS controls
-  // the robot directly without a standby concept.
-  bool standby_mode = false;
-
-#else
-  // ---- PS4 controller path ----
+  bool ps4_override = false;
   if (PS4.isConnected()) {
     int ly = PS4.LStickY();
     int rx = PS4.RStickX();
-    r3_pressed = PS4.R3();
-
-    // Share button toggles standby mode
+    bool up_pressed    = PS4.Up();
+    bool down_pressed  = PS4.Down();
     bool share_pressed = PS4.Share();
+    r3_pressed         = PS4.R3();
+
+    // Share button toggles standby mode.
     if (share_pressed && !last_share_pressed) {
       standby_mode = !standby_mode;
+      ps4_override = true;
     }
     last_share_pressed = share_pressed;
 
-    // Dead-band ±15 on stick to prevent drift
-    if (abs(ly) > 15) forward_cmd = ly / 127.0f;
-    if (abs(rx) > 15) turn_cmd    = rx / 127.0f;
+    float ps4_forward_cmd = 0.0f;
+    float ps4_turn_cmd    = 0.0f;
 
-    // D-pad Up = take off and raise height
-    if (PS4.Up()) {
+    // Dead-band ±15 on stick to prevent drift.
+    if (abs(ly) > 15) {
+      ps4_forward_cmd = ly / 127.0f;
+      ps4_override = true;
+    }
+    if (abs(rx) > 15) {
+      ps4_turn_cmd = rx / 127.0f;
+      ps4_override = true;
+    }
+
+    // D-pad Up = take off and raise height.
+    if (up_pressed) {
       if (!has_taken_off) {
         standby_mode  = false;
         has_taken_off = true;
       }
       target_height_mm += 50.0f * dt;
+      ps4_override = true;
     }
 
-    // D-pad Down = lower height
-    if (PS4.Down()) target_height_mm -= 50.0f * dt;
+    // D-pad Down = lower height.
+    if (down_pressed) {
+      target_height_mm -= 50.0f * dt;
+      ps4_override = true;
+    }
 
     target_height_mm = clampf(target_height_mm, 280.0f, 502.75f);
+
+    if (ps4_override) {
+      forward_cmd = ps4_forward_cmd;
+      turn_cmd    = ps4_turn_cmd;
+    }
+  } else {
+    last_share_pressed = false;
   }
-#endif  // ROS_BRIDGE_TEST_MODE
 
   // ----------------------------------------------------------
   // [I] Height trajectory – smooth low-pass filter
@@ -443,20 +489,15 @@ void loop() {
   }
 
   // ----------------------------------------------------------
-  // [K] Telemetry logging (WiFi UDP, non-blocking)
-  // ----------------------------------------------------------
-  logger_log(now, dt, imu, fb, state, out, safety_stop, 0);
-
-  // ----------------------------------------------------------
   // [L] Serial status print (1 Hz, human-readable)
   // ----------------------------------------------------------
-  // In ROS_BRIDGE_TEST_MODE these prints are suppressed to avoid
-  // polluting the serial line that ROS reads.
+  // When ROS_BRIDGE_ENABLED is active these prints are suppressed
+  // to keep the serial line clean for the bridge protocol.
   static unsigned long last_print = 0;
   if ((now - last_print) > 1000) {
     last_print = now;
 
-#if !ROS_BRIDGE_TEST_MODE
+#if !ROS_BRIDGE_ENABLED
     if (safety_stop) {
       if (!is_upright)
         Serial.printf("SAFETY STOP: Tipped over! Pitch: %.1f deg\n",

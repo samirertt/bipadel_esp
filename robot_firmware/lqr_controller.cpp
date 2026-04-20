@@ -9,7 +9,7 @@ float lqr_compute_balance_rad_s(const RobotState& s, const LqrGains& g) {
   float pos_error = s.x_pos;
 
   // Positional deadband: Disables K1 restoring force within a +/- 0.75 radian boundary.
-  if (fabs(pos_error) < 0.75f) {
+  if (fabs(pos_error) < 0.25f) {
       pos_error = 0.0f;
   }
 
