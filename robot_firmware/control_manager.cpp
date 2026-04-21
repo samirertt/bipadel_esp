@@ -6,7 +6,7 @@
 
 static constexpr float KP_VEL = 0.02f;  
 static constexpr float KI_VEL = 0.001f; 
-static constexpr float MAX_TARGET_VELOCITY = 7.50f;     
+static constexpr float MAX_TARGET_VELOCITY = 2.50f;     // it was 7.50
 static constexpr float MAX_PITCH_OFFSET_RAD = 0.105f;    
 static constexpr float TURN_TORQUE_NM = 1.0f;                    
 
@@ -82,8 +82,8 @@ ControlOutput control_manager_update(float dt, const RobotState& state, float fo
 
   float balance_torque = lqr_compute_balance_rad_s(target_state, current_gains); 
 
-  const float FRICTION_OFFSET = 0.35f; 
-  bool is_stalled = (abs(state.x_vel) < 0.05f);
+  const float FRICTION_OFFSET = 0.10f; 
+  bool is_stalled = (abs(state.x_vel) < 0.1f);
   if (balance_torque > 0.02f) {
       if (is_stalled) balance_torque += FRICTION_OFFSET;
   } else if (balance_torque < -0.02f) {

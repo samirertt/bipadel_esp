@@ -90,8 +90,7 @@ void imu_update(float dt) {
   if (abs(gyro_z_dps) < 0.5f) gyro_z_dps = 0.0f; // Deadband to kill micro-drift
   g_robot_yaw_deg += gyro_z_dps * dt;
 
-  //g_imu.accel_angle_deg = roundf_int(accel_angle_deg);
-  //g_imu.gyro_rate_dps   = roundf_int(gyro_x_dps);
+
   g_imu.accel_angle_deg = accel_angle_deg;
   g_imu.gyro_rate_dps   = gyro_x_dps;
   g_imu.fused_angle_deg = g_robot_angle_deg + ANGLE_OFFSET_DEG;

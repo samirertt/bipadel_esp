@@ -14,7 +14,7 @@ void estimator_init() {
 
 void estimator_update(float dt, const ImuData& imu, const MotorFeedback& fb) {
   (void)dt;
-  float r_pos_fixed = -fb.right_pos_deg;
+  float r_pos_fixed = fb.right_pos_deg;   // -
   float r_vel_fixed = fb.right_vel_dps;
 
   if (!g_zeroed) {
