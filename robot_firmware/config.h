@@ -28,8 +28,8 @@
 //                            internally (no real CAN readback).
 //                            Useful when CAN motors are not connected.
 // ============================================================
-#define ROS_BRIDGE_ENABLED       0
-#define ROS_BRIDGE_TEST_MODE     0
+#define ROS_BRIDGE_ENABLED       1
+#define ROS_BRIDGE_TEST_MODE     1
 #define ROS_BRIDGE_DEMO_FEEDBACK 0
 
 // ============================================================
@@ -62,7 +62,7 @@
 // ============================================================
 #define LOOP_HZ          500    // Control loop frequency in Hz
 #define SAFE_ANGLE_DEG   35.0f  // Tilt beyond this → safety stop
-#define ALPHA            0.996f // Complementary filter weight (gyro vs accel)
+#define ALPHA            0.99f // Complementary filter weight (gyro vs accel)
 
 // ============================================================
 // SECTION 4 – LQR GAIN SCHEDULING
@@ -83,10 +83,10 @@ static constexpr float HEIGHT_SHORT_MM = 280.0f;   // Minimum squat height
 
 // Tall-stance LQR gains  (tuned at ~502.75 mm)
 static constexpr LqrGains GAINS_TALL = {
-  -0.0f,    // k1 – wheel position
-  -0.65f,    // k2 – wheel velocity
-  -35.50f,   // k3 – body angle
-  -4.750f     // k4 – body rate
+  -0.005f,    // k1 – wheel position
+  -0.40f,    // k2 – wheel velocity
+  -28.0f,   // k3 – body angle
+  -4.350f     // k4 – body rate
 };
 
 // Short-stance LQR gains  (tuned at ~280 mm; re-tune after mechanical changes)
@@ -121,4 +121,4 @@ static constexpr float WHEEL_RADIUS_M = 0.1f;  // Wheel radius in metres
 // SECTION 7 – IMU
 // ============================================================
 #define GYRO_ADDR       0x68   // I2C address of ITG-3200 gyroscope
-#define ANGLE_OFFSET_DEG 3.3f  // Static pitch trim to level the robot
+#define ANGLE_OFFSET_DEG 3.2f  // Static pitch trim to level the robot
