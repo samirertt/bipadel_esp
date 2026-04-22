@@ -84,9 +84,9 @@ static constexpr float HEIGHT_SHORT_MM = 280.0f;   // Minimum squat height
 // Tall-stance LQR gains  (tuned at ~502.75 mm)
 static constexpr LqrGains GAINS_TALL = {
   -0.005f,    // k1 – wheel position
-  -0.40f,    // k2 – wheel velocity
-  -28.0f,   // k3 – body angle
-  -4.350f     // k4 – body rate
+  -0.60f,    // k2 – wheel velocity
+  -32.50f,   // k3 – body angle
+  -4.750f     // k4 – body rate
 };
 
 // Short-stance LQR gains  (tuned at ~280 mm; re-tune after mechanical changes)
@@ -108,6 +108,17 @@ static constexpr LqrGains GAINS_SHORT = {
 //   true  → positions in metres   (multiply by WHEEL_RADIUS_M)
 #define USE_LINEAR_POSITION_UNITS false
 static constexpr float WHEEL_RADIUS_M = 0.1f;  // Wheel radius in metres
+
+
+// ============================================================
+// SECTION 5.5 – TORSO HEAVY PAYLOAD TUNING (NODES 5 & 6)
+// ============================================================
+static constexpr float TORSO_CURRENT_LIMIT = 50.0f; 
+static constexpr float TORSO_VEL_LIMIT     = 30.0f; 
+static constexpr float TORSO_POS_GAIN      = 45.0f;  // Tuned Stiffness
+static constexpr float TORSO_VEL_GAIN      = 0.35f;  // Tuned Damping
+static constexpr float TORSO_VEL_INT_GAIN  = 0.0f;   // Tuned Anti-Sag
+
 
 // ============================================================
 // SECTION 6 – HARDWARE PINS

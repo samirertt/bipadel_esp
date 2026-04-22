@@ -291,7 +291,19 @@ void setup() {
 #if !ROS_BRIDGE_ENABLED
   Serial.println("\nHardware Check Passed. Enabling Motors (Closed Loop)...");
 #endif
+  // Enable all motors
+  Serial.println("Enabling motors...");
   motors_enable();
+  delay(500); // Give motors a moment to settle in closed-loop
+
+  // NEW: Push the heavy payload tuning to Nodes 5 and 6
+  Serial.println("Applying heavy payload tuning to torso...");
+  motors_apply_torso_tuning();
+  delay(100);
+
+  // Initialize Estimator & Controllers
+  estimator_init();
+  control_manager_init();
 
   last_loop_ms = millis();
 

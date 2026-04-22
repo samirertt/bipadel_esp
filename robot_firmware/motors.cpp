@@ -57,3 +57,38 @@ void motors_set_leg_positions_deg(float l_knee_deg, float r_knee_deg, float l_to
   can_bus_send_position(4, r_knee_revs);
   can_bus_send_position(6, r_torso_revs);
 }
+
+
+// Motors 5 and 6 Tuning
+void motors_apply_torso_tuning() {
+  uint8_t torso_nodes[] = {5, 6};
+  
+  for (int i = 0; i < 2; i++) {
+    uint8_t id = torso_nodes[i];
+    
+    // 1. Current and Velocity Limits (CMD 0x0F)
+    float vel_lim = TORSO_VEL_LIMIT;
+    float cur_lim = TORSO_CURRENT_LIMIT;
+    uint8_t lim_data[8];
+    memcpy(lim_data, &vel_lim, 4);
+    memcpy(lim_data + 4, &cur_lim, 4);
+    can_bus_transmit_frame(id, 0x0F, lim_data, 8);
+    delay(10); 
+
+    // 2. Pos Gain / Stiffness (CMD 0x1A)
+    float pos_gain = TORSO_POS_GAIN; 
+    uint8_t pos_data[4];
+    memcpy(pos_data, &pos_gain, 4);
+    can_bus_transmit_frame(id, 0x1A, pos_data, 4);
+    delay(10);
+
+    // 3. Vel Gains / Damping & Anti-Sag (CMD 0x1B)
+    float vel_gain = TORSO_VEL_GAIN;
+    float vel_int = TORSO_VEL_INT_GAIN;
+    uint8_t vel_data[8];
+    memcpy(vel_data, &vel_gain, 4);
+    memcpy(vel_data + 4, &vel_int, 4);
+    can_bus_transmit_frame(id, 0x1B, vel_data, 8);
+    delay(10);
+  }
+}
