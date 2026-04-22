@@ -84,9 +84,9 @@ static constexpr float HEIGHT_SHORT_MM = 280.0f;   // Minimum squat height
 // Tall-stance LQR gains  (tuned at ~502.75 mm)
 static constexpr LqrGains GAINS_TALL = {
   -0.005f,    // k1 – wheel position
-  -0.60f,    // k2 – wheel velocity
+  -1.0f,    // k2 – wheel velocity
   -32.50f,   // k3 – body angle
-  -4.750f     // k4 – body rate
+  -5.0f     // k4 – body rate
 };
 
 // Short-stance LQR gains  (tuned at ~280 mm; re-tune after mechanical changes)
@@ -115,8 +115,8 @@ static constexpr float WHEEL_RADIUS_M = 0.1f;  // Wheel radius in metres
 // ============================================================
 static constexpr float TORSO_CURRENT_LIMIT = 50.0f; 
 static constexpr float TORSO_VEL_LIMIT     = 30.0f; 
-static constexpr float TORSO_POS_GAIN      = 45.0f;  // Tuned Stiffness
-static constexpr float TORSO_VEL_GAIN      = 0.35f;  // Tuned Damping
+static constexpr float TORSO_POS_GAIN      = 25.0f;  // Tuned Stiffness
+static constexpr float TORSO_VEL_GAIN      = 0.38f;  // Tuned Damping
 static constexpr float TORSO_VEL_INT_GAIN  = 0.0f;   // Tuned Anti-Sag
 
 
@@ -132,4 +132,4 @@ static constexpr float TORSO_VEL_INT_GAIN  = 0.0f;   // Tuned Anti-Sag
 // SECTION 7 – IMU
 // ============================================================
 #define GYRO_ADDR       0x68   // I2C address of ITG-3200 gyroscope
-#define ANGLE_OFFSET_DEG 3.2f  // Static pitch trim to level the robot
+#define ANGLE_OFFSET_DEG 4.6f  // Static pitch trim to level the robot
