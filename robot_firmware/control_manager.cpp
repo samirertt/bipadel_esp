@@ -82,13 +82,13 @@ ControlOutput control_manager_update(float dt, const RobotState& state, float fo
 
   float balance_torque = lqr_compute_balance_rad_s(target_state, current_gains); 
 
-  // const float FRICTION_OFFSET = 0.10f; 
-  // bool is_stalled = (abs(state.x_vel) < 0.1f);
-  // if (balance_torque > 0.02f) {
-  //     if (is_stalled) balance_torque += FRICTION_OFFSET;
-  // } else if (balance_torque < -0.02f) {
-  //     if (is_stalled) balance_torque -= FRICTION_OFFSET;
-  // } else balance_torque = 0.0f;
+  const float FRICTION_OFFSET = 0.40f; 
+  bool is_stalled = (abs(state.x_vel) < 0.1f);
+  if (balance_torque > 0.02f) {
+      if (is_stalled) balance_torque += FRICTION_OFFSET;
+  } else if (balance_torque < -0.02f) {
+      if (is_stalled) balance_torque -= FRICTION_OFFSET;
+  } else balance_torque = 0.0f;
 
   if (r3_reset) target_yaw_deg = state.yaw_angle_deg;
   else if (abs(turn_cmd) > 0.05f) target_yaw_deg -= turn_cmd * (120.0f * dt); 

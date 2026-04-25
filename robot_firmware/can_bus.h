@@ -39,7 +39,9 @@ void         can_bus_transmit_frame(int node_id, int cmd_id, uint8_t *data, int 
 // Typed command helpers (convert to ODrive CAN Simple frames internally)
 void         can_bus_send_velocity(int node_id, float vel_value);   // cmd 0x0D
 void         can_bus_send_torque  (int node_id, float torque_nm);   // cmd 0x0E
-void         can_bus_send_position(int node_id, float pos_revs);    // cmd 0x0C
+
+// --- UPDATED: Added Feedforward arguments with 0.0f defaults ---
+void         can_bus_send_position(int node_id, float pos_revs, float vel_ff_rps = 0.0f, float torque_ff_nm = 0.0f);    // cmd 0x0C
 
 // Feedback accessor – returns a snapshot of the last decoded values
 MotorFeedback can_bus_get_feedback();

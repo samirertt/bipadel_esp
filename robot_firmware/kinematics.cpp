@@ -1,5 +1,6 @@
 #include "kinematics.h"
-#include "utils.h"         
+#include "config.h"
+#include "utils.h"
 #include <Arduino.h>
 #include <math.h>
 
@@ -25,8 +26,7 @@ JointAngles kinematics_compute(float target_height_mm) {
     JointAngles result = {0};
     result.valid = false;
 
-    // Bulletproof IK Hardware Constraints
-    target_height_mm = clampf(target_height_mm, 280.0f, 502.75f);
+    target_height_mm = clampf(target_height_mm, 280.0f, 450.0f);
 
     float y_int = target_height_mm - WHEEL_RADIUS;
 
@@ -44,7 +44,7 @@ JointAngles kinematics_compute(float target_height_mm) {
     float C0 = (y_int * y_int) - (L2 * L2) + (L2 * L2 * K_FACTOR * K_FACTOR);
     float discriminant = B * B - 4.0f * A * C0;
 
-    if (discriminant < 0.0f) return result; 
+    if (discriminant < 0.0f) return result;
 
     float sqrtD = sqrtf(discriminant);
     float s1 = (-B + sqrtD) / (2.0f * A);
@@ -60,14 +60,13 @@ JointAngles kinematics_compute(float target_height_mm) {
     float cosAlpha = sqrtf(1.0f - s * s);
     float C_val = -K_FACTOR * cosAlpha;
 
-    if (fabsf(C_val) > 1.0f) return result; 
+    if (fabsf(C_val) > 1.0f) return result;
 
     float theta = acosf(C_val) - alpha;
 
-    // Convert everything to degrees silently before returning
     result.alpha_deg       = alpha * 180.0f / PI;
     result.knee_angle_deg  = theta * 180.0f / PI;
-    result.torso_angle_deg = (alpha + theta - (PI / 2.0f)) * 180.0f / PI; 
+    result.torso_angle_deg = (alpha + theta - (PI / 2.0f)) * 180.0f / PI;
     result.com_y           = WHEEL_RADIUS + ((W1 * s + W2 * sinf(alpha + theta)) / M_TOTAL);
     result.valid           = true;
 

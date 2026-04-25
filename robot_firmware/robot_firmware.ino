@@ -63,8 +63,12 @@
 // ============================================================
 // Timing
 // ============================================================
-static unsigned long last_loop_ms    = 0;
-static const unsigned long LOOP_INTERVAL_MS = 1000 / LOOP_HZ;
+// static unsigned long last_loop_ms    = 0;
+// static const unsigned long LOOP_INTERVAL_MS = 1000 / LOOP_HZ;
+
+// Timing in us
+static unsigned long last_loop_us = 0;
+static const unsigned long LOOP_INTERVAL_US = 1000000UL / LOOP_HZ;  // 2000 us at 500 Hz
 
 // ============================================================
 // Boot posture & height trajectory
@@ -296,16 +300,17 @@ void setup() {
   motors_enable();
   delay(500); // Give motors a moment to settle in closed-loop
 
-  // NEW: Push the heavy payload tuning to Nodes 5 and 6
-  Serial.println("Applying heavy payload tuning to torso...");
-  motors_apply_torso_tuning();
-  delay(100);
+  // Torso gains (nodes 5 & 6) are configured externally via the
+  // Motor Wizard and persist in ODrive flash, so we do not push
+  // them over CAN here.
 
   // Initialize Estimator & Controllers
   estimator_init();
   control_manager_init();
 
-  last_loop_ms = millis();
+  // Last Loop initiators 
+  //last_loop_ms = millis();
+  last_loop_us = micros();
 
 #if !ROS_BRIDGE_ENABLED
   Serial.println("==================================");
@@ -340,14 +345,47 @@ void loop() {
   // [C] Rate limiter – skip the rest until next control tick
   // ----------------------------------------------------------
   unsigned long now = millis();
-  if ((now - last_loop_ms) < LOOP_INTERVAL_MS) return;
 
-  float dt = (now - last_loop_ms) / 1000.0f;
-  last_loop_ms = now;
+  // // Print the Actual loop hz
+  // static uint32_t loop_count = 0;
+  // static unsigned long last_hz_print = 0;
 
+  // loop_count++;
+  // if ((now - last_hz_print) > 1000) {
+  //   Serial.printf("Actual loop Hz: %u\n", loop_count);
+  //   loop_count = 0;
+  //   last_hz_print = now;
+  // }
+
+  // if ((now - last_loop_ms) < LOOP_INTERVAL_MS) return;
+
+  // float dt = (now - last_loop_ms) / 1000.0f;
+  // last_loop_ms = now;
+
+  // Timing in us 
+  unsigned long now_us = micros();
+  static uint32_t loop_count = 0;
+  static unsigned long last_hz_print = 0;
+
+  loop_count++;
+  if ((now - last_hz_print) > 1000) {
+    Serial.printf("Actual loop Hz: %u\n", loop_count);
+    loop_count = 0;
+    last_hz_print = now;
+  }
+
+  if ((now_us - last_loop_us) < LOOP_INTERVAL_US) return;
+  float dt = (now_us - last_loop_us) / 1e6f;
+  last_loop_us = now_us;
+
+  // ----------------------------------------------------------
   // ----------------------------------------------------------
   // [D] Sensing – IMU and motor feedback
   // ----------------------------------------------------------
+  // Feed current filtered height into the IMU so the angle-offset
+  // schedule (config.h / angle_offset_for_height) is evaluated
+  // against the right row of the table this cycle.
+  imu_set_current_height_mm(current_height_mm);
   imu_update(dt);
   ImuData      imu = imu_get_data();
   MotorFeedback fb = can_bus_get_feedback();
@@ -441,7 +479,7 @@ void loop() {
       ps4_override = true;
     }
 
-    target_height_mm = clampf(target_height_mm, 280.0f, 502.75f);
+    target_height_mm = clampf(target_height_mm, 280.0f, 450.0f); // max height is 502.75
 
     if (ps4_override) {
       forward_cmd = ps4_forward_cmd;
