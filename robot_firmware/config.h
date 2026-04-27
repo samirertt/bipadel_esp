@@ -14,8 +14,8 @@
 // ============================================================
 // SECTION 1 – ROS 2 BRIDGE FEATURE FLAGS
 // ============================================================
-#define ROS_BRIDGE_ENABLED       0
-#define ROS_BRIDGE_TEST_MODE     0
+#define ROS_BRIDGE_ENABLED       1
+#define ROS_BRIDGE_TEST_MODE     1
 #define ROS_BRIDGE_DEMO_FEEDBACK 0
 
 // ============================================================
@@ -23,10 +23,6 @@
 // ============================================================
 #define ROS_BRIDGE_BAUD           921600
 
-#define GET_BAUDRATE               'b'
-#define READ_ENCODERS              'e'
-#define RESET_ENCODERS             'r'
-#define MOTOR_SPEEDS               'm'
 
 #define ROS_CMD_TIMEOUT_MS         500UL
 #define ROS_BRIDGE_MAX_WHEEL_RAD_S 10.0f
@@ -54,9 +50,9 @@ static constexpr float HEIGHT_SHORT_MM = 280.0f;
 
 static constexpr LqrGains GAINS_TALL = {
   -0.0f,    // k1 – wheel position
-  -0.0f,     // k2 – wheel velocity
-  -25.0f,    // k3 – body angle
-  -2.350f      // k4 – body rate
+  -1.5f,     // k2 – wheel velocity
+  -24.0f,    // k3 – body angle
+  -3.7f      // k4 – body rate
 };
 
 static constexpr LqrGains GAINS_SHORT = {
@@ -120,7 +116,7 @@ static constexpr AngleOffsetPoint ANGLE_OFFSET_TABLE[] = {
   { 280.0f, 4.7f },   // squat    — measure and tune
   { 360.0f, 4.5f },   // mid      — measure and tune
   { 435.0f, 4.2f },   // boot     — measure and tune
-  { 450.0f, 4.2f },   // tall     — measure and tune
+  { 450.0f, 4.85f },   // tall     — measure and tune
 };
 
 static constexpr int ANGLE_OFFSET_TABLE_SIZE =

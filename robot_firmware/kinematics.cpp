@@ -4,16 +4,17 @@
 #include <Arduino.h>
 #include <math.h>
 
-static constexpr float L1 = 200.0f;
-static constexpr float L2 = 200.0f;
-static constexpr float D1 = 0.548208245f;
-static constexpr float D2 = 0.606484005f;
-static constexpr float ML1 = 314.0f;
-static constexpr float ML2 = 296.0f;
-static constexpr float M0 = 1126.0f;
+// Robot's Physical Parameters                              Old Version
+static constexpr float L1 = 200.0f;      //Shin Length
+static constexpr float L2 = 200.0f;      //Hip  Length
+static constexpr float D1 = 0.59114f;                       //0.548208245f;
+static constexpr float D2 = 0.61624f;                       //0.606484005f;
+static constexpr float ML1 = 414.0f;     //shin Mass        //314.0f;
+static constexpr float ML2 = 404.0f;     //hip  Mass        //296.0f;
+static constexpr float M0 = 1286.0f;                        //1126.0f;
 static constexpr float M1 = 786.0f;
-static constexpr float M2 = 4465.0f;
-static constexpr float WHEEL_RADIUS = 102.75f;
+static constexpr float M2 = 4720.0f;                        //4465.0f;
+static constexpr float WHEEL_RADIUS = 122.5f;              //102.75f;
 
 static constexpr float M_TOTAL = M0 + ML1 + M1 + ML2 + M2;
 static constexpr float W1 = (ML1 * D1 + M1 + ML2 + M2) * L1;

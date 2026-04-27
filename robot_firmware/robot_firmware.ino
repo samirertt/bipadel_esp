@@ -175,9 +175,11 @@ void setup() {
   // ----------------------------------------------------------
   // Block until every motor node has sent at least one CAN frame.
   // Prevents sending position commands before the ODrives are ready.
-#if !ROS_BRIDGE_ENABLED
-  Serial.print("Waiting for all 6 motors to heartbeat... ");
-#endif
+#if !ROS_BRIDGE_DEMO_FEEDBACK
+  #if !ROS_BRIDGE_ENABLED
+    Serial.print("Waiting for all 6 motors to heartbeat... ");
+  #endif
+
   while (true) {
     can_bus_poll();
     MotorFeedback init_fb = can_bus_get_feedback();
@@ -190,11 +192,14 @@ void setup() {
         online_count++;
       }
     }
+
     if (online_count == 6) break;
     delay(10);
   }
-#if !ROS_BRIDGE_ENABLED
-  Serial.println("OK! All 6 Motors Verified.");
+
+  #if !ROS_BRIDGE_ENABLED
+    Serial.println("OK! All 6 Motors Verified.");
+  #endif
 #endif
 
   // ----------------------------------------------------------
@@ -294,9 +299,10 @@ void setup() {
 
 #if !ROS_BRIDGE_ENABLED
   Serial.println("\nHardware Check Passed. Enabling Motors (Closed Loop)...");
-#endif
+
   // Enable all motors
   Serial.println("Enabling motors...");
+#endif
   motors_enable();
   delay(500); // Give motors a moment to settle in closed-loop
 
@@ -328,7 +334,9 @@ void loop() {
   // ----------------------------------------------------------
   // Must be called as fast as possible to drain the RX queue
   // before the ODrive's 500 Hz heartbeat frames overflow it.
+  #if ROS_BRIDGE_ENABLED
   can_bus_poll();
+
   can_bus_check_alerts();
 
   // ----------------------------------------------------------
@@ -337,6 +345,7 @@ void loop() {
   // Drains the Serial RX buffer and enforces the command watchdog.
   // Must run every loop, not only on control-cycle ticks, so that
   // ROS serial ACKs ('OK') are sent without lag.
+  #endif
 #if ROS_BRIDGE_ENABLED
   ros_bridge_update();
 #endif
@@ -369,7 +378,9 @@ void loop() {
 
   loop_count++;
   if ((now - last_hz_print) > 1000) {
+    #if !ROS_BRIDGE_ENABLED
     Serial.printf("Actual loop Hz: %u\n", loop_count);
+    #endif
     loop_count = 0;
     last_hz_print = now;
   }
