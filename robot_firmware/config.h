@@ -50,9 +50,9 @@ static constexpr float HEIGHT_SHORT_MM = 280.0f;
 
 static constexpr LqrGains GAINS_TALL = {
   -0.0f,    // k1 – wheel position
-  -1.5f,     // k2 – wheel velocity
+  -2.5f,     // k2 – wheel velocity
   -24.0f,    // k3 – body angle
-  -3.7f      // k4 – body rate
+  -4.0f      // k4 – body rate
 };
 
 static constexpr LqrGains GAINS_SHORT = {
@@ -116,7 +116,7 @@ static constexpr AngleOffsetPoint ANGLE_OFFSET_TABLE[] = {
   { 280.0f, 4.7f },   // squat    — measure and tune
   { 360.0f, 4.5f },   // mid      — measure and tune
   { 435.0f, 4.2f },   // boot     — measure and tune
-  { 450.0f, 4.85f },   // tall     — measure and tune
+  { 450.0f, 5.1f },   // tall     — measure and tune
 };
 
 static constexpr int ANGLE_OFFSET_TABLE_SIZE =
