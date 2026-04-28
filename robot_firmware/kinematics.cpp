@@ -27,7 +27,7 @@ JointAngles kinematics_compute(float target_height_mm) {
     JointAngles result = {0};
     result.valid = false;
 
-    target_height_mm = clampf(target_height_mm, 280.0f, 450.0f);
+    target_height_mm = clampf(target_height_mm, 330.0f, 490.0f);
 
     float y_int = target_height_mm - WHEEL_RADIUS;
 
