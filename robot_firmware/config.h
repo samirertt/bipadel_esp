@@ -14,8 +14,8 @@
 // ============================================================
 // SECTION 1 – ROS 2 BRIDGE FEATURE FLAGS
 // ============================================================
-#define ROS_BRIDGE_ENABLED       1
-#define ROS_BRIDGE_TEST_MODE     1
+#define ROS_BRIDGE_ENABLED       0
+#define ROS_BRIDGE_TEST_MODE     0
 #define ROS_BRIDGE_DEMO_FEEDBACK 0
 
 // ============================================================
@@ -31,7 +31,7 @@
 // ============================================================
 // SECTION 3 – MAIN CONTROL LOOP
 // ============================================================
-#define LOOP_HZ          200    // Control loop frequency in Hz
+#define LOOP_HZ          500    // Control loop frequency in Hz
 #define SAFE_ANGLE_DEG   35.0f  // Tilt beyond this → safety stop
 #define ALPHA            0.98f  // Complementary filter weight (gyro vs accel)
 
@@ -45,14 +45,14 @@ struct LqrGains {
   float k4;  // Body rate gain
 };
 
-static constexpr float HEIGHT_TALL_MM  = 450.0f;
-static constexpr float HEIGHT_SHORT_MM = 240.0f;
+static constexpr float HEIGHT_TALL_MM  = 490.0f;
+static constexpr float HEIGHT_SHORT_MM = 330.0f;
 
 static constexpr LqrGains GAINS_TALL = {
   -0.0f,    // k1 – wheel position
-  -2.7f,     // k2 – wheel velocity -3.5
-  -19.0f,    // k3 – body angle  
-  -6.3f      // k4 – body rate
+  -3.0f,     // k2 – wheel velocity -3.50
+  -21.0f,    // k3 – body angle  
+  -4.0f      // k4 – body rate
 };
 
 static constexpr LqrGains GAINS_SHORT = {
@@ -113,10 +113,10 @@ struct AngleOffsetPoint {
 
 static constexpr AngleOffsetPoint ANGLE_OFFSET_TABLE[] = {
   // { height_mm, offset_deg }
-  { 280.0f, 4.7f },   // squat    — measure and tune
-  { 360.0f, 4.5f },   // mid      — measure and tune
-  { 435.0f, 4.2f },   // boot     — measure and tune
-  { 450.0f, 5.65f },   // tall     — measure and tune
+  { 330.0f, 0.0f },   // squat    — measure and tune
+  { 380.0f, 0.0 },   // mid      — measure and tune
+  { 450.0f, 0.0f },   // boot     — measure and tune
+  { 490.0f, 4.90f },   // tall     — measure and tune
 };
 
 static constexpr int ANGLE_OFFSET_TABLE_SIZE =
@@ -147,3 +147,11 @@ static inline float angle_offset_for_height(float height_mm) {
   // Should be unreachable.
   return ANGLE_OFFSET_TABLE[0].offset_deg;
 }
+
+// ============================================================
+// SECTION 8 – WIFI / TELEMETRY
+// ============================================================
+#define WIFI_SSID        "SPECIAL"
+#define WIFI_PASSWORD    "AMIGO123"
+#define TARGET_PC_IP     "192.168.154.91"  // <-- CHANGE TO YOUR COMPUTER'S IP ADDRESS
+#define UDP_PORT         12345
