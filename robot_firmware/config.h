@@ -48,18 +48,20 @@ struct LqrGains {
 static constexpr float HEIGHT_TALL_MM  = 490.0f;
 static constexpr float HEIGHT_SHORT_MM = 330.0f;
 
+
+// K3, k4 should be retuned.
 static constexpr LqrGains GAINS_TALL = {
-  -0.0f,    // k1 – wheel position
-  -3.0f,     // k2 – wheel velocity -3.50
-  -21.0f,    // k3 – body angle  
-  -4.0f      // k4 – body rate
+  -0.75f,    // k1 – wheel position
+  -2.5f,     // k2 – wheel velocity 
+  -15.75f,    // k3 – body angle    
+  -6.50f      // k4 – body rate      
 };
 
 static constexpr LqrGains GAINS_SHORT = {
-   0.0f,    // k1
-   0.0f,    // k2
-   0.0f,    // k3
-   0.0f     // k4
+  0.0f,    // k1
+  0.0f,    // k2
+  0.0f,    // k3
+  0.0f     // k4
 };
 
 // ============================================================
@@ -114,7 +116,7 @@ struct AngleOffsetPoint {
 static constexpr AngleOffsetPoint ANGLE_OFFSET_TABLE[] = {
   // { height_mm, offset_deg }
   { 330.0f, 0.0f },   // squat    — measure and tune
-  { 380.0f, 0.0 },   // mid      — measure and tune
+  { 380.0f, 6.30 },   // mid      — measure and tune
   { 450.0f, 0.0f },   // boot     — measure and tune
   { 490.0f, 4.90f },   // tall     — measure and tune
 };
