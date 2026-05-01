@@ -33,7 +33,7 @@
 // ============================================================
 #define LOOP_HZ          500    // Control loop frequency in Hz
 #define SAFE_ANGLE_DEG   35.0f  // Tilt beyond this → safety stop
-#define ALPHA            0.98f  // Complementary filter weight (gyro vs accel)
+#define ALPHA            0.982f  // Complementary filter weight (gyro vs accel)
 
 // ============================================================
 // SECTION 4 – LQR GAIN SCHEDULING
@@ -48,13 +48,12 @@ struct LqrGains {
 static constexpr float HEIGHT_TALL_MM  = 490.0f;
 static constexpr float HEIGHT_SHORT_MM = 330.0f;
 
-
 // K3, k4 should be retuned.
 static constexpr LqrGains GAINS_TALL = {
   -0.0f,    // k1 – wheel position
-  -0.95f,     // k2 – wheel velocity 
-  -20.50f,    // k3 – body angle    
-  -4.0f      // k4 – body rate      
+  -0.60f,    // k2 – wheel velocity 
+  -22.2f,  // k3 – body angle    
+  -3.4f    // k4 – body rate      
 };
 
 static constexpr LqrGains GAINS_SHORT = {
@@ -89,54 +88,31 @@ static constexpr float WHEEL_RADIUS_M = 0.1f;
 // ------------------------------------------------------------
 // 7.1 – HEIGHT-SCHEDULED ANGLE OFFSET
 // ------------------------------------------------------------
-// The fused pitch angle needs a small bias (`offset`) added to it
-// to represent true upright, because the IMU is not mounted exactly
-// on the body's gravitational vertical axis.  As the robot changes
-// height, the body CoM moves forward/back relative to the IMU, so
-// the required offset changes with height.
-//
-// This table is a simple lookup/interpolation: sorted by height
-// (ascending).  The applied offset is linearly interpolated between
-// neighbouring entries.  Outside the range, the endpoint value is
-// used (clamped).  Add as many entries as you like — minimum 2.
-//
-// Procedure to populate:
-//   1. Command the robot to a fixed height (e.g. 280 mm).
-//   2. Manually find the offset that makes it hover / drift least.
-//   3. Record the (height, offset) pair below.
-//   4. Repeat for 3–5 heights across your working range.
-//
-// Entries MUST be sorted by height_mm ascending.
-// ------------------------------------------------------------
 struct AngleOffsetPoint {
   float height_mm;
   float offset_deg;
 };
 
+// NOTE: Reset to 0.0f since the IMU tare function now handles the mechanical baseline.
+// Tune these slightly to correct for leg-extension CoG shifts.
 static constexpr AngleOffsetPoint ANGLE_OFFSET_TABLE[] = {
-  // { height_mm, offset_deg }
-  { 330.0f, 0.0f },   // squat    — measure and tune
-  { 380.0f, 6.30 },   // mid      — measure and tune
-  { 450.0f, 0.0f },   // boot     — measure and tune
-  { 488.0f, 5.5f },   // ~tall    — measured and tuned   ------> (,0,-22.75,-3.75) ==> 5.5
-  { 490.0f, 5.39f },   // tall     — measure and tune  ----> Needs to have the least value
+  { 330.0f, 0.0f },
+  { 380.0f, 0.0f },
+  { 450.0f, 0.0f },
+  { 488.0f, 0.0f },
+  { 490.0f, -0.917f },
 };
 
 static constexpr int ANGLE_OFFSET_TABLE_SIZE =
     sizeof(ANGLE_OFFSET_TABLE) / sizeof(ANGLE_OFFSET_TABLE[0]);
 
-// Linear-interpolation helper.  Call this from imu.cpp every cycle
-// with the current filtered height; it returns the offset in degrees
-// to add to the fused pitch angle.
 static inline float angle_offset_for_height(float height_mm) {
-  // Clamp to table endpoints.
   if (height_mm <= ANGLE_OFFSET_TABLE[0].height_mm) {
     return ANGLE_OFFSET_TABLE[0].offset_deg;
   }
   if (height_mm >= ANGLE_OFFSET_TABLE[ANGLE_OFFSET_TABLE_SIZE - 1].height_mm) {
     return ANGLE_OFFSET_TABLE[ANGLE_OFFSET_TABLE_SIZE - 1].offset_deg;
   }
-  // Find the bracketing segment and lerp.
   for (int i = 0; i < ANGLE_OFFSET_TABLE_SIZE - 1; ++i) {
     float h0 = ANGLE_OFFSET_TABLE[i].height_mm;
     float h1 = ANGLE_OFFSET_TABLE[i + 1].height_mm;
@@ -147,7 +123,6 @@ static inline float angle_offset_for_height(float height_mm) {
       return o0 + t * (o1 - o0);
     }
   }
-  // Should be unreachable.
   return ANGLE_OFFSET_TABLE[0].offset_deg;
 }
 
@@ -156,5 +131,5 @@ static inline float angle_offset_for_height(float height_mm) {
 // ============================================================
 #define WIFI_SSID        "SPECIAL"
 #define WIFI_PASSWORD    "AMIGO123"
-#define TARGET_PC_IP     "192.168.154.91"  // <-- CHANGE TO YOUR COMPUTER'S IP ADDRESS
+#define TARGET_PC_IP     "192.168.154.91"
 #define UDP_PORT         12345
