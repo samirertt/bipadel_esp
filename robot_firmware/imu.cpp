@@ -148,7 +148,7 @@ void imu_update(float dt) {
 
   // Raw gyro
   g_imu.gyro_x = gyro_x;
-  g_imu.gyro_y = gyro_y;
+  g_imu.gyro_y = g_robot_angle_deg;
   g_imu.gyro_z = gyro_z;
 
   // Processed
