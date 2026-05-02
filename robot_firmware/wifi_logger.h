@@ -9,6 +9,3 @@ bool wifi_logger_init(const char* ssid, const char* password, const char* target
 // Pack and send the telemetry frame (rate-limited internally to ~200Hz)
 void wifi_logger_update(float &dt, float &forward_cmd, bool &safety_stop);
 
-
-
-void wifi_ros_update();  // Call every loop

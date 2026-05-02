@@ -327,7 +327,7 @@ void setup() {
 #endif
 
   // Replace with your actual network credentials and target listener IP/Port
-  bool wifi_ok = wifi_logger_init("Ustaz Abdulfattah's A53", "clin0914", "192.168.1.100", 9876);
+  wifi_logger_init("Ustaz Abdulfattah's A53", "clin0914", "192.168.1.100", 9876);
 
 #if !ROS_BRIDGE_ENABLED
   if (wifi_ok) {
