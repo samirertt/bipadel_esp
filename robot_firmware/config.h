@@ -56,7 +56,7 @@ static constexpr float HEIGHT_SHORT_MM = 330.0f;
 // K3, k4 should be retuned.
 static constexpr LqrGains GAINS_TALL = {
   -0.0f,    // k1 – wheel position
-  1.25f,     // k2 – wheel velocity 
+  1.15f,     // k2 – wheel velocity 
   -22.2f,    // k3 – body angle    
   -4.1f      // k4 – body rate      
 };
@@ -123,7 +123,7 @@ static constexpr AngleOffsetPoint ANGLE_OFFSET_TABLE[] = {
   { 380.0f, 6.30 },   // mid      — measure and tune
   { 450.0f, 0.0f },   // boot     — measure and tune
   { 488.0f, 0.0f },   // ~tall    — measured and tuned   ------> (,0,-22.75,-3.75) ==> 5.5
-  { 490.0f, 4.925f },   // tall     — measure and tune  ----> Needs to have the least value
+  { 490.0f, 4.975f },   // tall     — measure and tune  ----> Needs to have the least value
 };
 
 static constexpr int ANGLE_OFFSET_TABLE_SIZE =
