@@ -82,7 +82,7 @@ ControlOutput control_manager_update(float dt, const RobotState& state, float fo
 
   float balance_torque = lqr_compute_balance_rad_s(target_state, current_gains); 
 
-  const float FRICTION_OFFSET = 0.3f; 
+  const float FRICTION_OFFSET = 0.40f; 
   bool is_stalled = (abs(state.x_vel) < 0.1f);
   if (balance_torque > 0.02f) {
       if (is_stalled) balance_torque += FRICTION_OFFSET;

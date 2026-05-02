@@ -14,14 +14,18 @@
 // ============================================================
 // SECTION 1 – ROS 2 BRIDGE FEATURE FLAGS
 // ============================================================
-#define ROS_BRIDGE_ENABLED       0
-#define ROS_BRIDGE_TEST_MODE     0
+#define ROS_BRIDGE_ENABLED       1
+#define ROS_BRIDGE_TEST_MODE     1
 #define ROS_BRIDGE_DEMO_FEEDBACK 0
+#define BLUETOOTH_LOGGER_ENABLE  1
 
 // ============================================================
 // SECTION 2 – ROS BRIDGE PROTOCOL SETTINGS
 // ============================================================
 #define ROS_BRIDGE_BAUD           921600
+
+#define BT_DEVICE_NAME "Bipedal_Debug"
+
 
 
 #define ROS_CMD_TIMEOUT_MS         500UL
@@ -33,7 +37,7 @@
 // ============================================================
 #define LOOP_HZ          500    // Control loop frequency in Hz
 #define SAFE_ANGLE_DEG   35.0f  // Tilt beyond this → safety stop
-#define ALPHA            0.98f  // Complementary filter weight (gyro vs accel)
+#define ALPHA            0.983f  // Complementary filter weight (gyro vs accel)
 
 // ============================================================
 // SECTION 4 – LQR GAIN SCHEDULING
@@ -52,9 +56,9 @@ static constexpr float HEIGHT_SHORT_MM = 330.0f;
 // K3, k4 should be retuned.
 static constexpr LqrGains GAINS_TALL = {
   -0.0f,    // k1 – wheel position
-  -0.95f,     // k2 – wheel velocity 
-  -20.50f,    // k3 – body angle    
-  -4.0f      // k4 – body rate      
+  -0.0f,     // k2 – wheel velocity 
+  -22.225f,    // k3 – body angle    
+  -4.1f      // k4 – body rate      
 };
 
 static constexpr LqrGains GAINS_SHORT = {
@@ -118,8 +122,8 @@ static constexpr AngleOffsetPoint ANGLE_OFFSET_TABLE[] = {
   { 330.0f, 0.0f },   // squat    — measure and tune
   { 380.0f, 6.30 },   // mid      — measure and tune
   { 450.0f, 0.0f },   // boot     — measure and tune
-  { 488.0f, 5.5f },   // ~tall    — measured and tuned   ------> (,0,-22.75,-3.75) ==> 5.5
-  { 490.0f, 5.39f },   // tall     — measure and tune  ----> Needs to have the least value
+  { 488.0f, 0.0f },   // ~tall    — measured and tuned   ------> (,0,-22.75,-3.75) ==> 5.5
+  { 490.0f, 4.7f },   // tall     — measure and tune  ----> Needs to have the least value
 };
 
 static constexpr int ANGLE_OFFSET_TABLE_SIZE =

@@ -72,29 +72,29 @@ static const unsigned long LOOP_INTERVAL_US = 1000000UL / LOOP_HZ;  // 2000 us a
 // ============================================================
 // The robot boots at a known physical stand height.  Target height
 // is modified at runtime by the PS4 D-pad (or future ROS service).
-static const float BOOT_HEIGHT_MM  = 435.75f;
-static float target_height_mm      = BOOT_HEIGHT_MM;
-static float current_height_mm     = BOOT_HEIGHT_MM;  // Low-pass filtered
+static const float BOOT_HEIGHT_MM = 435.75f;
+static float target_height_mm = BOOT_HEIGHT_MM;
+static float current_height_mm = BOOT_HEIGHT_MM;  // Low-pass filtered
 
 // ============================================================
 // IK reference offsets (calibrated at boot)
 // ============================================================
 // All leg position commands are *relative* to the boot encoder
 // readings, so absolute encoder position is not required.
-static float knee_offset_deg  = 0.0f;
+static float knee_offset_deg = 0.0f;
 static float torso_offset_deg = 0.0f;
 
 // Boot-time encoder snapshots (absolute motor positions in degrees)
-static float boot_pos_l_knee_deg  = 0.0f;
-static float boot_pos_r_knee_deg  = 0.0f;
+static float boot_pos_l_knee_deg = 0.0f;
+static float boot_pos_r_knee_deg = 0.0f;
 static float boot_pos_l_torso_deg = 0.0f;
 static float boot_pos_r_torso_deg = 0.0f;
 
 // ============================================================
 // PS4 state
 // ============================================================
-static bool standby_mode       = true;   // Robot wakes up in standby
-static bool has_taken_off      = false;  // Tracks first liftoff
+static bool standby_mode = true;    // Robot wakes up in standby
+static bool has_taken_off = false;  // Tracks first liftoff
 static bool last_share_pressed = false;
 
 // ============================================================
@@ -118,9 +118,13 @@ void setup() {
 #if !ROS_BRIDGE_ENABLED
   Serial.print("[0/3] Initializing PS4 Bluetooth... ");
 #endif
+
+#if BLUETOOTH_LOGGER_ENABLE
   bool ps4_ok = PS4.begin("C4:5B:BE:91:C3:06");
 #if !ROS_BRIDGE_ENABLED
   Serial.println(ps4_ok ? "OK" : "FAILED!");
+#endif
+
 #endif
 
   // ----------------------------------------------------------
@@ -132,6 +136,11 @@ void setup() {
   bool imu_ok = imu_init();
 #if !ROS_BRIDGE_ENABLED
   Serial.println(imu_ok ? "OK" : "FAILED! Check I2C wiring");
+#endif
+
+#if BLUETOOTH_LOGGER_ENABLED
+  bt_debug_init();
+  bt_debug_printf("\n=== Bluetooth Debug Started ===\n");
 #endif
 
   // ----------------------------------------------------------
@@ -173,9 +182,9 @@ void setup() {
   // Wait for all 6 motor heartbeats
   // ----------------------------------------------------------
 #if !ROS_BRIDGE_DEMO_FEEDBACK
-  #if !ROS_BRIDGE_ENABLED
-    Serial.print("Waiting for all 6 motors to heartbeat... ");
-  #endif
+#if !ROS_BRIDGE_ENABLED
+  Serial.print("Waiting for all 6 motors to heartbeat... ");
+#endif
 
   while (true) {
     can_bus_poll();
@@ -184,8 +193,7 @@ void setup() {
     int online_count = 0;
 
     for (int i = 1; i <= 6; i++) {
-      if (init_fb.last_msg_time_ms[i] > 0 &&
-          (now - init_fb.last_msg_time_ms[i]) < 500) {
+      if (init_fb.last_msg_time_ms[i] > 0 && (now - init_fb.last_msg_time_ms[i]) < 500) {
         online_count++;
       }
     }
@@ -194,9 +202,9 @@ void setup() {
     delay(10);
   }
 
-  #if !ROS_BRIDGE_ENABLED
-    Serial.println("OK! All 6 Motors Verified.");
-  #endif
+#if !ROS_BRIDGE_ENABLED
+  Serial.println("OK! All 6 Motors Verified.");
+#endif
 #endif
 
   // ----------------------------------------------------------
@@ -206,13 +214,13 @@ void setup() {
   Serial.println("Waking motors in 0 Nm Torque Mode to read encoders...");
 #endif
   for (int id = 1; id <= 6; id++) {
-    uint8_t torque_mode_data[8] = {1, 0, 0, 0, 1, 0, 0, 0};
+    uint8_t torque_mode_data[8] = { 1, 0, 0, 0, 1, 0, 0, 0 };
     can_bus_transmit_frame(id, 0x0B, torque_mode_data, 8);
     delay(10);
-    uint8_t enable_data[8] = {8, 0, 0, 0, 0, 0, 0, 0};
+    uint8_t enable_data[8] = { 8, 0, 0, 0, 0, 0, 0, 0 };
     can_bus_transmit_frame(id, 0x07, enable_data, 8);
     delay(10);
-    uint8_t zero_torque[4] = {0, 0, 0, 0};
+    uint8_t zero_torque[4] = { 0, 0, 0, 0 };
     can_bus_transmit_frame(id, 0x0E, zero_torque, 4);
   }
 
@@ -231,8 +239,8 @@ void setup() {
 
   // Capture the physical boot encoder positions.
   MotorFeedback final_init_fb = can_bus_get_feedback();
-  boot_pos_l_knee_deg  = final_init_fb.left_knee_pos_deg;
-  boot_pos_r_knee_deg  = final_init_fb.right_knee_pos_deg;
+  boot_pos_l_knee_deg = final_init_fb.left_knee_pos_deg;
+  boot_pos_r_knee_deg = final_init_fb.right_knee_pos_deg;
   boot_pos_l_torso_deg = final_init_fb.left_torso_pos_deg;
   boot_pos_r_torso_deg = final_init_fb.right_torso_pos_deg;
 
@@ -267,7 +275,7 @@ void setup() {
 #endif
   JointAngles boot_angles = kinematics_compute(BOOT_HEIGHT_MM);
   if (boot_angles.valid) {
-    knee_offset_deg  = boot_angles.knee_angle_deg;
+    knee_offset_deg = boot_angles.knee_angle_deg;
     torso_offset_deg = boot_angles.torso_angle_deg;
 #if !ROS_BRIDGE_ENABLED
     Serial.println("OK");
@@ -331,15 +339,15 @@ void loop() {
   // ----------------------------------------------------------
   unsigned long now = millis();
   unsigned long now_us = micros();
-  
+
   static uint32_t loop_count = 0;
   static unsigned long last_hz_print = 0;
 
   loop_count++;
   if ((now - last_hz_print) > 1000) {
-    #if !ROS_BRIDGE_ENABLED
+#if !ROS_BRIDGE_ENABLED
     Serial.printf("Actual loop Hz: %u\n", loop_count);
-    #endif
+#endif
     loop_count = 0;
     last_hz_print = now;
   }
@@ -353,7 +361,7 @@ void loop() {
   // ----------------------------------------------------------
   imu_set_current_height_mm(current_height_mm);
   imu_update(dt);
-  ImuData      imu = imu_get_data();
+  ImuData imu = imu_get_data();
   MotorFeedback fb = can_bus_get_feedback();
 
   // ----------------------------------------------------------
@@ -372,16 +380,16 @@ void loop() {
   // ----------------------------------------------------------
   // [G] Safety checks
   // ----------------------------------------------------------
-  bool is_upright     = safety_angle_ok_deg(rad2deg(state.angle_rad));
+  bool is_upright = safety_angle_ok_deg(rad2deg(state.angle_rad));
   bool motors_healthy = safety_motors_ok(fb, now);
-  bool safety_stop    = !is_upright || !motors_healthy;
+  bool safety_stop = !is_upright || !motors_healthy;
 
   // ----------------------------------------------------------
   // [H] Command acquisition
   // ----------------------------------------------------------
   float forward_cmd = 0.0f;
-  float turn_cmd    = 0.0f;
-  bool  r3_pressed  = false;
+  float turn_cmd = 0.0f;
+  bool r3_pressed = false;
 
   bool has_ros_cmd = false;
 #if ROS_BRIDGE_ENABLED
@@ -389,17 +397,17 @@ void loop() {
 #endif
   if (!has_ros_cmd) {
     forward_cmd = 0.0f;
-    turn_cmd    = 0.0f;
+    turn_cmd = 0.0f;
   }
 
   bool ps4_override = false;
   if (PS4.isConnected()) {
     int ly = PS4.LStickY();
     int rx = PS4.RStickX();
-    bool up_pressed    = PS4.Up();
-    bool down_pressed  = PS4.Down();
+    bool up_pressed = PS4.Up();
+    bool down_pressed = PS4.Down();
     bool share_pressed = PS4.Share();
-    r3_pressed         = PS4.R3();
+    r3_pressed = PS4.R3();
 
     if (share_pressed && !last_share_pressed) {
       standby_mode = !standby_mode;
@@ -408,7 +416,7 @@ void loop() {
     last_share_pressed = share_pressed;
 
     float ps4_forward_cmd = 0.0f;
-    float ps4_turn_cmd    = 0.0f;
+    float ps4_turn_cmd = 0.0f;
 
     if (abs(ly) > 15) {
       ps4_forward_cmd = ly / 127.0f;
@@ -421,7 +429,7 @@ void loop() {
 
     if (up_pressed) {
       if (!has_taken_off) {
-        standby_mode  = false;
+        standby_mode = false;
         has_taken_off = true;
       }
       target_height_mm += 50.0f * dt;
@@ -437,7 +445,7 @@ void loop() {
 
     if (ps4_override) {
       forward_cmd = ps4_forward_cmd;
-      turn_cmd    = ps4_turn_cmd;
+      turn_cmd = ps4_turn_cmd;
     }
   } else {
     last_share_pressed = false;
@@ -454,31 +462,31 @@ void loop() {
   ControlOutput out = {};
 
   if (safety_stop) {
-    out.wheels.left_torque  = 0.0f;
+    out.wheels.left_torque = 0.0f;
     out.wheels.right_torque = 0.0f;
     motors_stop();
 
   } else {
     out = control_manager_update(dt, state, forward_cmd, turn_cmd,
-                                  r3_pressed, current_height_mm, standby_mode);
+                                 r3_pressed, current_height_mm, standby_mode);
 
     JointAngles joint_targets = kinematics_compute(current_height_mm);
     if (joint_targets.valid) {
-      float relative_knee_deg  = joint_targets.knee_angle_deg  - knee_offset_deg;
+      float relative_knee_deg = joint_targets.knee_angle_deg - knee_offset_deg;
       float relative_torso_deg = joint_targets.torso_angle_deg - torso_offset_deg;
 
-      float l_knee_ik_deg  = -relative_knee_deg;
-      float r_knee_ik_deg  =  relative_knee_deg;
+      float l_knee_ik_deg = -relative_knee_deg;
+      float r_knee_ik_deg = relative_knee_deg;
       float l_torso_ik_deg = -relative_torso_deg;
-      float r_torso_ik_deg =  relative_torso_deg;
+      float r_torso_ik_deg = relative_torso_deg;
 
-      float final_l_knee_deg  = boot_pos_l_knee_deg  + l_knee_ik_deg;
-      float final_r_knee_deg  = boot_pos_r_knee_deg  + r_knee_ik_deg;
+      float final_l_knee_deg = boot_pos_l_knee_deg + l_knee_ik_deg;
+      float final_r_knee_deg = boot_pos_r_knee_deg + r_knee_ik_deg;
       float final_l_torso_deg = boot_pos_l_torso_deg + l_torso_ik_deg;
       float final_r_torso_deg = boot_pos_r_torso_deg + r_torso_ik_deg;
 
       motors_set_leg_positions_deg(final_l_knee_deg, final_r_knee_deg,
-                                    final_l_torso_deg, final_r_torso_deg);
+                                   final_l_torso_deg, final_r_torso_deg);
     }
 
     motors_set_wheel_torque(out.wheels.left_torque, out.wheels.right_torque);
@@ -515,4 +523,23 @@ void loop() {
   // [K] UDP WiFi Logging
   // ----------------------------------------------------------
   wifi_logger_update(dt, imu, fb, state, out, forward_cmd, safety_stop);
+
+#if BLUETOOTH_LOGGER_ENABLED && ROS_BRIDGE_ENABLED
+  static unsigned long last_bt_debug = 0;
+  if (millis() - last_bt_debug > 200) {  // 5 Hz debug
+    last_bt_debug = millis();
+
+    float fwd, turn;
+    bool has_cmd;
+    ros_bridge_get_commands(fwd, turn, has_cmd);
+
+    bt_debug_printf("ROS_CMD: fwd=%.3f turn=%.3f has_cmd=%d | MotorEnabled=%d | Standby=%d\n",
+                    fwd, turn, has_cmd, ros_bridge_motor_enabled(), standby_mode);
+
+    // Also show received wheel targets
+    bt_debug_printf("Wheel targets: L=%.1f rad/s  R=%.1f rad/s\n",
+                    ros_bridge_left_target_rad_s(),
+                    ros_bridge_right_target_rad_s());
+  }
+#endif
 }
