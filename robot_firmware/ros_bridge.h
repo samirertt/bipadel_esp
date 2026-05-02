@@ -17,5 +17,5 @@ uint8_t ros_bridge_control_mode();
 float ros_bridge_left_target_rad_s();
 float ros_bridge_right_target_rad_s();
 
-void ros_bridge_publish_feedback(const MotorFeedback &fb);
+void ros_bridge_publish_feedback(const MotorFeedback &fb, const ImuData &Imu);
 void ros_bridge_publish_full_state(const MotorFeedback &fb, float pitch, float gyro_y);

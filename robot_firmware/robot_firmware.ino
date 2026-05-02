@@ -407,7 +407,7 @@ void loop() {
   // Sends "F,<left_pos>,<left_vel>,<right_pos>,<right_vel>" so
   // the ros2_control joint_state_broadcaster can read odometry.
 #if ROS_BRIDGE_ENABLED
-  ros_bridge_publish_feedback(fb);
+  ros_bridge_publish_feedback(fb,imu);
 #endif
 
   // ----------------------------------------------------------

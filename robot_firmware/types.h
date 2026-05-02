@@ -2,11 +2,20 @@
 #include <Arduino.h>
 
 struct ImuData {
+  float accel_x;
+  float accel_y;
+  float accel_z;
+
+  float gyro_x;
+  float gyro_y;
+  float gyro_z;
+
   float accel_angle_deg;
   float gyro_rate_dps;
   float fused_angle_deg;
-  float yaw_rate_dps;    
-  float yaw_angle_deg;   
+
+  float yaw_rate_dps;
+  float yaw_angle_deg;
 };
 
 struct MotorFeedback {
