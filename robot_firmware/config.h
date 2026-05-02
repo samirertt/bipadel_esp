@@ -158,7 +158,7 @@ static inline float angle_offset_for_height(float height_mm) {
 // ============================================================
 // SECTION 8 – WIFI / TELEMETRY
 // ============================================================
-#define WIFI_SSID        "SPECIAL"
-#define WIFI_PASSWORD    "AMIGO123"
+#define WIFI_SSID        "ustaz-Nitro-AN515-58"
+#define WIFI_PASSWORD    "123456789"
 #define TARGET_PC_IP     "192.168.154.91"  // <-- CHANGE TO YOUR COMPUTER'S IP ADDRESS
 #define UDP_PORT         12345
