@@ -10,3 +10,7 @@ bool wifi_logger_init(const char* ssid, const char* password, const char* target
 void wifi_logger_update(float dt, const ImuData& imu, const MotorFeedback& fb, 
                         const RobotState& state, const ControlOutput& out, 
                         float forward_cmd, bool safety_stop);
+
+
+
+void wifi_ros_update();  // Call every loop

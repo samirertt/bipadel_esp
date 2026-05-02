@@ -54,7 +54,7 @@
 
 #include "ros_bridge.h"
 
-#include "bt_debug.h"
+#include "wifi_logger.h"
 
 // -- PS4 controller --
 // PS4 is compiled in so it can coexist with the ROS bridge.
@@ -114,6 +114,7 @@ void setup() {
   Serial.println("   ROBOT BOOT SEQUENCE STARTING   ");
   Serial.println("==================================");
 #endif
+
 
   // ----------------------------------------------------------
   // [0/3] Bluetooth PS4 Controller
@@ -318,6 +319,34 @@ void setup() {
   //last_loop_ms = millis();
   last_loop_us = micros();
 
+// ----------------------------------------------------------
+  // [4/4] WiFi Logging & ROS Bridge Initialization
+  // ----------------------------------------------------------
+#if !ROS_BRIDGE_ENABLED
+  Serial.print("Initializing WiFi Logger & UDP Listener... ");
+#endif
+
+  // Replace with your actual network credentials and target listener IP/Port
+  bool wifi_ok = wifi_logger_init("Ustaz Abdulfattah's A53", "clin0914", "192.168.1.100", 9876);
+
+#if !ROS_BRIDGE_ENABLED
+  if (wifi_ok) {
+    Serial.println("OK");
+  } else {
+    Serial.println("FAILED! System booting without WiFi logging.");
+  }
+#endif
+
+  // Initialize your last loop timing in us 
+  last_loop_us = micros();
+
+#if !ROS_BRIDGE_ENABLED
+  Serial.println("==================================");
+  Serial.println("   ENTERING MAIN CONTROL LOOP     ");
+  Serial.println("==================================");
+#endif
+}
+
 #if !ROS_BRIDGE_ENABLED
   Serial.println("==================================");
   Serial.println("   ENTERING MAIN CONTROL LOOP     ");
@@ -339,6 +368,8 @@ void loop() {
 
   can_bus_check_alerts();
 
+  
+
   // ----------------------------------------------------------
   // [B] ROS bridge update  (runs every iteration)
   // ----------------------------------------------------------
@@ -346,6 +377,8 @@ void loop() {
   // Must run every loop, not only on control-cycle ticks, so that
   // ROS serial ACKs ('OK') are sent without lag.
   #endif
+
+
 #if ROS_BRIDGE_ENABLED
   ros_bridge_update();
 #endif
@@ -439,6 +472,7 @@ void loop() {
   bool has_ros_cmd = false;
 #if ROS_BRIDGE_ENABLED
   ros_bridge_get_commands(forward_cmd, turn_cmd, has_ros_cmd);
+  wifi_logger_update(forward, turn_cmd, has_ros_cmd);
 #endif
   if (!has_ros_cmd) {
     forward_cmd = 0.0f;
@@ -549,6 +583,7 @@ void loop() {
     motors_set_wheel_torque(out.wheels.left_torque, out.wheels.right_torque);
   }
 
+  // wifi_logger_update(forward_cmd, safety_stop);
   // ----------------------------------------------------------
   // [L] Serial status print (1 Hz, human-readable)
   // ----------------------------------------------------------

@@ -33,9 +33,7 @@ bool wifi_logger_init(const char* ssid, const char* password, const char* target
     return false; // Boot without WiFi if not available
 }
 
-void wifi_logger_update(float dt, const ImuData& imu, const MotorFeedback& fb, 
-                        const RobotState& state, const ControlOutput& out, 
-                        float forward_cmd, bool safety_stop) {
+void wifi_logger_update(float &fwd, float &turn, bool &valid) {
     
     if (!is_connected) return;
 
@@ -52,26 +50,11 @@ void wifi_logger_update(float dt, const ImuData& imu, const MotorFeedback& fb,
     // forward_torque_nm, left_cmd_torque_nm, right_cmd_torque_nm, safety_stop, cmd_currently
     
     int len = snprintf(buffer, sizeof(buffer),
-        "%lu,%.4f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.4f,%.4f,%.4f,%.4f,%.3f,%.3f,%.3f,%.3f,%d,%.2f",
+        "%lu,%.4f,%.2f,%.2f,%d",
         millis(), 
-        dt,
-        imu.accel_angle_deg, 
-        imu.gyro_rate_dps, 
-        imu.fused_angle_deg,
-        fb.left_pos_deg, 
-        fb.left_vel_dps, 
-        fb.right_pos_deg, 
-        fb.right_vel_dps,
-        state.angle_rad, 
-        state.rate_rad, 
-        state.x_pos, 
-        state.x_vel,
-        out.balance_torque, 
-        forward_cmd,  // Map forward command here
-        out.wheels.left_torque, 
-        out.wheels.right_torque,
-        safety_stop ? 1 : 0,
-        forward_cmd   // General command state
+        fwd,
+        turn,
+        valid
     );
 
     udp.beginPacket(target_ip_addr, target_udp_port);
