@@ -345,7 +345,7 @@ void setup() {
   Serial.println("   ENTERING MAIN CONTROL LOOP     ");
   Serial.println("==================================");
 #endif
-}
+
 
 #if !ROS_BRIDGE_ENABLED
   Serial.println("==================================");
@@ -472,7 +472,7 @@ void loop() {
   bool has_ros_cmd = false;
 #if ROS_BRIDGE_ENABLED
   ros_bridge_get_commands(forward_cmd, turn_cmd, has_ros_cmd);
-  wifi_logger_update(forward, turn_cmd, has_ros_cmd);
+  wifi_logger_update(forward_cmd, turn_cmd, has_ros_cmd);
 #endif
   if (!has_ros_cmd) {
     forward_cmd = 0.0f;
