@@ -22,6 +22,9 @@ constexpr uint8_t HEADER_2 = 0x55;
 constexpr uint8_t MSG_WHEEL_VELOCITY = 0x01;
 constexpr uint8_t MSG_MOTOR_ENABLE   = 0x02;
 constexpr uint8_t MSG_CONTROL_MODE   = 0x03;
+// 0x05: ESP32 → ROS — tells the host to DTR-reset the ESP32.
+// Sent once when all 6 motors first become alive after a cold boot.
+constexpr uint8_t MSG_ESP_RESET      = 0x05;
 constexpr uint8_t MSG_FULL_STATE     = 0x12;
 
 constexpr uint8_t MAX_PAYLOAD = 64;
@@ -54,7 +57,11 @@ uint8_t s_rx_payload[MAX_PAYLOAD];
 float s_forward_cmd = 0.0f;
 float s_turn_cmd = 0.0f;
 bool  s_has_ros_cmd = false;
-bool  s_motor_enabled = false;
+#if ROS_BRIDGE_TEST_MODE
+bool s_motor_enabled = true;   // ← trust ROS; no separate enable needed
+#else
+bool s_motor_enabled = false;
+#endif
 uint8_t s_control_mode = 0;
 
 float s_left_cmd_rad_s  = 0.0f;
@@ -74,7 +81,7 @@ bool s_reset_requested = false;
 uint8_t checksum(uint8_t msg_id, uint8_t len, const uint8_t *payload)
 {
   uint8_t sum = msg_id + len;
-  for (uint8_t i = 0; i < len; i++) {
+  for (uint8_t i = 0; i < len && payload != nullptr; i++) {
     sum += payload[i];
   }
   return sum;
@@ -113,7 +120,7 @@ bool send_packet(uint8_t msg_id, const uint8_t *payload, uint8_t len)
   packet[offset++] = len;
 
   for (uint8_t i = 0; i < len; i++) {
-    packet[offset++] = payload[i];
+    packet[offset++] = payload[i];  // payload is null only when len==0, so safe
   }
 
   packet[offset++] = checksum(msg_id, len, payload);
@@ -217,7 +224,7 @@ void maybe_send_periodic_state()
   MotorFeedback fb = can_bus_get_feedback();
   ImuData imu = imu_get_data();
 
-  uint8_t payload[4 + 10 * sizeof(float)];
+  uint8_t payload[4 + 10 * sizeof(float) + 2];
   uint8_t offset = 0;
 
   uint32_t t = (uint32_t)millis();
@@ -236,6 +243,23 @@ void maybe_send_periodic_state()
   write_payload(payload, offset, deg2rad(imu.gyro_x));
   write_payload(payload, offset, deg2rad(imu.gyro_y));
   write_payload(payload, offset, deg2rad(imu.gyro_z));
+
+  // Motor status — same bitmask encoding as ros_bridge_publish_feedback
+  uint8_t alive_mask = 0;
+  uint8_t fault_mask = 0;
+  for (int i = 1; i <= 6; i++) {
+    if (fb.last_msg_time_ms[i] > 0 && (now - fb.last_msg_time_ms[i]) < 500)
+      alive_mask |= static_cast<uint8_t>(1u << (i - 1));
+  }
+  if (fb.left_wheel_error)  fault_mask |= (1u << 0);
+  if (fb.right_wheel_error) fault_mask |= (1u << 1);
+  if (fb.left_knee_error)   fault_mask |= (1u << 2);
+  if (fb.right_knee_error)  fault_mask |= (1u << 3);
+  if (fb.left_torso_error)  fault_mask |= (1u << 4);
+  if (fb.right_torso_error) fault_mask |= (1u << 5);
+
+  payload[offset++] = alive_mask;
+  payload[offset++] = fault_mask;
 
   send_packet(MSG_FULL_STATE, payload, offset);
 }
@@ -297,7 +321,8 @@ void ros_bridge_set_timeout_ms(unsigned long timeout_ms)
 // ---------------------------------------------------------------------------
 void ros_bridge_publish_feedback(const MotorFeedback &fb, const ImuData &imu)
 {
-  uint8_t payload[4 + 10 * sizeof(float)];
+  // payload = 4-byte timestamp + 10 floats (wheel pos/vel, accel, gyro) + 2 status bytes
+  uint8_t payload[4 + 10 * sizeof(float) + 2];
   uint8_t offset = 0;
 
   uint32_t t = (uint32_t)millis();
@@ -316,6 +341,26 @@ void ros_bridge_publish_feedback(const MotorFeedback &fb, const ImuData &imu)
   write_payload(payload, offset, deg2rad(imu.gyro_x));
   write_payload(payload, offset, deg2rad(imu.gyro_y));
   write_payload(payload, offset, deg2rad(imu.gyro_z));
+
+  // --- Motor status appended at the end of every FULL_STATE packet ---
+  // alive_mask: bit (i-1) set when motor node i sent a heartbeat within 500 ms.
+  // fault_mask: bit order = LW, RW, LK, RK, LT, RT (matches node IDs 1-6).
+  unsigned long now_ms = millis();
+  uint8_t alive_mask = 0;
+  uint8_t fault_mask = 0;
+  for (int i = 1; i <= 6; i++) {
+    if (fb.last_msg_time_ms[i] > 0 && (now_ms - fb.last_msg_time_ms[i]) < 500)
+      alive_mask |= static_cast<uint8_t>(1u << (i - 1));
+  }
+  if (fb.left_wheel_error)  fault_mask |= (1u << 0);
+  if (fb.right_wheel_error) fault_mask |= (1u << 1);
+  if (fb.left_knee_error)   fault_mask |= (1u << 2);
+  if (fb.right_knee_error)  fault_mask |= (1u << 3);
+  if (fb.left_torso_error)  fault_mask |= (1u << 4);
+  if (fb.right_torso_error) fault_mask |= (1u << 5);
+
+  payload[offset++] = alive_mask;
+  payload[offset++] = fault_mask;
 
   send_packet(MSG_FULL_STATE, payload, offset);
 }
@@ -344,3 +389,17 @@ bool ros_bridge_motor_enabled()         { return s_motor_enabled; }
 uint8_t ros_bridge_control_mode()       { return s_control_mode; }
 float ros_bridge_left_target_rad_s()    { return s_left_cmd_rad_s; }
 float ros_bridge_right_target_rad_s()   { return s_right_cmd_rad_s; }
+
+// ---------------------------------------------------------------------------
+// ros_bridge_notify_ros_reset
+// Sends MSG_ESP_RESET (0x05, zero-byte payload) to the ROS hardware interface.
+// The host receives this and performs a DTR-line reset so the ESP32 reboots
+// cleanly with all motors already powered.  Call this ONCE when all 6 motors
+// first become alive after a cold boot where motors were off.
+// ---------------------------------------------------------------------------
+void ros_bridge_notify_ros_reset()
+{
+  // Zero-byte payload: [AA][55][05][00][checksum]
+  // checksum = msg_id + len + (no payload bytes) = 0x05 + 0x00 = 0x05
+  send_packet(MSG_ESP_RESET, nullptr, 0);
+}

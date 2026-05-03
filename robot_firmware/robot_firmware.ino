@@ -478,6 +478,14 @@ void loop() {
     forward_cmd = 0.0f;
     turn_cmd    = 0.0f;
   }
+  else {
+    // Exit standby when ROS sends a valid command
+    if (standby_mode && (fabsf(forward_cmd) > ROS_BRIDGE_CMD_DEADBAND ||
+                         fabsf(turn_cmd)    > ROS_BRIDGE_CMD_DEADBAND)) {
+      standby_mode  = false;
+      has_taken_off = true;
+    }
+  }
 
   bool ps4_override = false;
   if (PS4.isConnected()) {

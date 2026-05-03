@@ -4,8 +4,8 @@
 #include "utils.h"
 #include <Arduino.h>
 
-static constexpr float KP_VEL = 0.0f;  // 0.02
-static constexpr float KI_VEL = 0.0f; // 0.001
+static constexpr float KP_VEL = 0.02f;  // 0.02
+static constexpr float KI_VEL = 0.001f; // 0.001
 static constexpr float MAX_TARGET_VELOCITY = 2.50f;     // it was 7.50
 static constexpr float MAX_PITCH_OFFSET_RAD = 0.105f;    
 static constexpr float TURN_TORQUE_NM = 1.0f;                    
